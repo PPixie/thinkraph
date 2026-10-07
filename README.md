@@ -2,6 +2,21 @@
 
 本地知识图谱学习工作台。保留 React、Radix Themes 和 React Flow 界面，使用 Fastify 文件 API。图谱列表、每张图谱与学习空间设置均写入本机 JSON，不使用数据库。
 
+## GitHub Pages
+
+[访问产品介绍](https://ppixie.github.io/thinkraph/)。GitHub Pages 部署 `site/` 中的静态介绍页面，展示交互场景与本地启动说明。完整工作台的文件保存和模型调用仍需要下方的本机 Fastify 服务。
+
+`.github/workflows/pages.yml` 在推送到 `main` 或手动运行时安装锁定依赖、构建 `dist-pages/` 并部署到 Pages。工作流通过 GitHub 的 Pages 元数据设置资源路径，支持仓库子路径。仓库 Settings → Pages 的 Source 需为 GitHub Actions；不需要配置模型密钥或其他部署密钥。
+
+本地预览仓库路径下的静态站点：
+
+```bash
+npm run build:pages -- --base /thinkraph/
+npm run preview:pages -- --base /thinkraph/
+```
+
+打开预览命令给出的地址并加上 `/thinkraph/`。修改公开页面使用 `site/`；本机工作台继续使用 `src/` 与原有启动命令。
+
 ## 启动
 
 使用 Node.js 22.21.1 或更新版本（可运行 `nvm use`）：

@@ -11,6 +11,8 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite --host 127.0.0.1",
     "build": "tsc -p tsconfig.server.json && vite build",
+    "build:pages": "vite build --config vite.pages.config.js",
+    "preview:pages": "vite preview --config vite.pages.config.js --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "start": "node dist-server/server/index.js",
     "preview": "vite preview --host 127.0.0.1",

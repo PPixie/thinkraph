@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f5f8f4" />
+    <meta name="description" content="Thinkraph 图式 Agent 学习工作台。把知识点、学习依赖、对话和笔记放进同一张图谱，让探索有路径，让理解留下来。" />
+    <meta property="og:title" content="Thinkraph | 让每一次对话，长成知识体系" />
+    <meta property="og:description" content="知识有坐标，探索有路径。了解 Thinkraph，并在本机开始你的学习空间。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ppixie.github.io/thinkraph/" />
+    <meta property="og:image" content="https://ppixie.github.io/thinkraph/social-cover.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>Thinkraph | 让每一次对话，长成知识体系</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <script>
+      try {
+        const preference = localStorage.getItem('thinkraph-site-theme');
+        if (preference === 'light' || preference === 'dark') document.documentElement.dataset.theme = preference;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <header class="site-header wrap">
+      <a class="brand" href="#" aria-label="Thinkraph 首页"><img src="./favicon.svg" alt="" width="32" height="32" />thinkraph<span>.</span></a>
+      <nav aria-label="主导航">
+        <a href="#explore">看看交互</a>
+        <a href="#start">本地开始</a>
+        <button id="theme-toggle" class="text-button" type="button" aria-label="切换深浅色">切换主题</button>
+        <a class="github-link" href="https://github.com/PPixie/thinkraph" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero wrap" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">图式 Agent 学习工作台</p>
+          <h1 id="hero-title">让每一次对话，<span>长成知识体系。</span></h1>
+          <p class="hero-description">把知识点、学习依赖和节点对话放进同一张图。回到一个问题，就能接着学。</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#start">本地开始 <span aria-hidden="true">→</span></a>
+            <a class="button secondary" href="#explore">看看交互</a>
+          </div>
+        </div>
+        <figure class="hero-visual">
+          <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="./assets/workspace-dark.webp" />
+            <img id="hero-image" src="./assets/workspace-light.webp" alt="Thinkraph 知识图谱：前置概念连接到 RAG 节点，右侧学习助手保留节点对话。" width="1680" height="1050" fetchpriority="high" />
+          </picture>
+          <figcaption>知识结构与学习对话，在同一个工作台里。</figcaption>
+        </figure>
+      </section>
+
+      <section class="story wrap" aria-labelledby="story-title">
+        <div class="story-copy">
+          <h2 id="story-title">聊过很多，<br />还想把它们连起来。</h2>
+          <p>长对话留下答案，图谱为理解找到位置。看清概念的关系，找到自己的下一步。</p>
+        </div>
+        <img src="./assets/story-cover.webp" alt="杂乱的聊天卡片连接到清晰的知识图谱，表现知识零散、重点难找和不知下一步的学习痛点。" width="1672" height="941" loading="lazy" decoding="async" />
+      </section>
+
+      <section id="explore" class="explore wrap" aria-labelledby="explore-title">
+        <div class="section-heading">
+          <h2 id="explore-title">一个节点，接着探索。</h2>
+          <p>从局部问题出发，始终看得见全貌。</p>
+        </div>
+        <div class="product-tabs" role="tablist" aria-label="交互场景">
+          <button id="tab-node" role="tab" aria-selected="true" aria-controls="product-panel" type="button" data-scene="node">节点学习</button>
+          <button id="tab-branch" role="tab" aria-selected="false" aria-controls="product-panel" tabindex="-1" type="button" data-scene="branch">分支扩展</button>
+          <button id="tab-path" role="tab" aria-selected="false" aria-controls="product-panel" tabindex="-1" type="button" data-scene="path">学习路径</button>
+        </div>
+        <div id="product-panel" class="product-panel" role="tabpanel" aria-labelledby="tab-node">
+          <div class="product-image">
+            <img id="scene-image" src="./assets/workspace-light.webp" alt="RAG 节点及其学习对话，前置概念在画布上可见。" width="1680" height="1050" loading="lazy" decoding="async" />
+          </div>
+          <div class="product-description" aria-live="polite">
+            <h3 id="scene-title">问题有位置，上下文跟着走。</h3>
+            <p id="scene-description">点击一个知识点，查看它的前置知识、对话、笔记和资料。下次回来，继续已有的探索。</p>
+            <p id="scene-detail" class="detail">对话按节点保存，切换主题也能回到原来的问题。</p>
+          </div>
+        </div>
+        <noscript><p>在本地工作台中，还可以预览并采纳 Agent 分支建议，或查看按前置知识组织的学习路径。</p></noscript>
+      </section>
+
+      <section id="start" class="start wrap" aria-labelledby="start-title">
+        <div class="start-copy">
+          <h2 id="start-title">在本机，开始你的学习空间。</h2>
+          <p>安装 Node.js 22.21.1 或更新版本，然后运行以下命令。在浏览器打开 <a href="http://127.0.0.1:5173" target="_blank" rel="noopener noreferrer">127.0.0.1:5173</a>。</p>
+          <p class="local-note">图谱和笔记保存为本地 JSON 文件。配置模型后即可使用 Agent；手工编辑、笔记和学习路径可直接使用。</p>
+          <a class="inline-link" href="https://github.com/PPixie/thinkraph#readme" target="_blank" rel="noopener noreferrer">查看完整说明 <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="setup">
+          <div class="setup-header"><span>终端</span><button type="button" id="copy-setup">复制命令</button></div>
+          <pre><code id="setup-command">git clone https://github.com/PPixie/thinkraph.git
+cd thinkraph
+npm install
+npm run dev</code></pre>
+          <p id="copy-status" role="status" class="copy-status"></p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer wrap">
+      <p>thinkraph. <span>理解一点，连接一点。</span></p>
+      <p>此页面为产品介绍。完整学习工作台在本机运行。</p>
+    </footer>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
