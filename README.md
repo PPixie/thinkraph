@@ -1,90 +1,75 @@
-# Thinkraph
+<p align="center">
+  <img src="docs/assets/thinkraph-logo.svg" alt="Thinkraph logo" width="96" height="96" />
+</p>
 
-本地知识图谱学习工作台。保留 React、Radix Themes 和 React Flow 界面，使用 Fastify 文件 API。图谱列表、每张图谱与学习空间设置均写入本机 JSON，不使用数据库。
+<h1 align="center">Thinkraph</h1>
 
-## GitHub Pages
+<p align="center"><strong>对话可以很长，理解需要结构。</strong></p>
+<p align="center">以知识点组织对话，用依赖关系连接理解。<br />一个本地运行、持续生长的图式 Agent 学习工作台。</p>
 
-[访问产品介绍](https://ppixie.github.io/thinkraph/)。GitHub Pages 部署 `site/` 中的静态介绍页面，展示交互场景与本地启动说明。完整工作台的文件保存和模型调用仍需要下方的本机 Fastify 服务。
+<p align="center">
+  <a href="https://ppixie.github.io/thinkraph/">项目网站</a> ·
+  <a href="#快速开始">快速开始</a> ·
+  <a href="#功能一览">功能一览</a> ·
+  <a href="docs/local-usage.md">使用文档</a>
+</p>
 
-`.github/workflows/pages.yml` 在推送到 `main` 或手动运行时安装锁定依赖、构建 `dist-pages/` 并部署到 Pages。工作流通过 GitHub 的 Pages 元数据设置资源路径，支持仓库子路径。仓库 Settings → Pages 的 Source 需为 GitHub Actions；不需要配置模型密钥或其他部署密钥。
+![Thinkraph 工作台：知识图谱与 RAG 节点的学习对话](artifacts/09-json-workspace-dark.png)
 
-本地预览仓库路径下的静态站点：
+长对话留下了答案，却很难看清概念之间的关系、缺失的基础和下一步。Thinkraph 把知识点放进一张有向无环图，让每个节点保留自己的对话、笔记、资料与掌握状态。
+
+## 功能一览
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>追问分支，保留主线</h3>
+      <p>从当前知识点扩展探索。Agent 先给出草稿，由你核对后采纳。</p>
+      <a href="artifacts/02-branch-preview.png"><img src="artifacts/02-branch-preview.png" alt="Agent 分支预览：虚线知识节点与采纳入口" /></a>
+    </td>
+    <td width="50%" valign="top">
+      <h3>按依赖找到下一步</h3>
+      <p>看清前置知识，结合掌握状态选择后续学习方向，也能自由探索。</p>
+      <a href="artifacts/08-learning-path.png"><img src="artifacts/08-learning-path.png" alt="学习路径：按前置依赖排列知识点与推荐下一步" /></a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>圈选知识，汇总理解</h3>
+      <p>整理相关节点与笔记，用汇总节点替换选区、重连后续知识，支持撤销。</p>
+      <a href="artifacts/summary-created.png"><img src="artifacts/summary-created.png" alt="知识汇总：RAG 汇总节点及保存的总结笔记" /></a>
+    </td>
+    <td width="50%" valign="top">
+      <h3>通过自测检查掌握</h3>
+      <p>用题目与解析发现知识盲点，掌握状态由你确认。</p>
+      <a href="artifacts/04-understanding-check.png"><img src="artifacts/04-understanding-check.png" alt="节点自测：选择答案、查看解析并确认掌握状态" /></a>
+    </td>
+  </tr>
+</table>
+
+[更多界面与截图说明](artifacts/README.md)，包括浅色主题、手机视图和节点笔记。部分交互截图来自原型阶段，图中内容为示例数据。
+
+## 快速开始
+
+需要 **Node.js 22.21.1 或更新版本**。
 
 ```bash
-npm run build:pages -- --base /thinkraph/
-npm run preview:pages -- --base /thinkraph/
-```
-
-打开预览命令给出的地址并加上 `/thinkraph/`。修改公开页面使用 `site/`；本机工作台继续使用 `src/` 与原有启动命令。
-
-## 启动
-
-使用 Node.js 22.21.1 或更新版本（可运行 `nvm use`）：
-
-```bash
+git clone https://github.com/PPixie/thinkraph.git
+cd thinkraph
 npm install
 npm run dev
 ```
 
-打开 http://127.0.0.1:5173。开发脚本同时启动前端与 3001 端口的文件服务，只监听本机。已有开发服务应先结束，避免端口和空间锁冲突。
+打开 [127.0.0.1:5173](http://127.0.0.1:5173)。首次进入为空空间，可新建图谱、加载示例或导入 JSON。
 
-构建后由一个服务提供页面和 API：
+**连接 Agent：** 在「空间与图谱设置 → 模型与服务配置」中填写兼容 Chat Completions 的端点、模型与 API Key。手工编辑、笔记、学习路径和摘录汇总无需模型。
 
-```bash
-npm run build
-npm start
-```
+**保留知识：** 图谱与学习记录保存到本机 `data/`，支持单图及整个学习空间的 JSON 导入导出、备份与恢复。使用远程模型时，请求中的学习内容会发送到配置的端点。
 
-打开 http://127.0.0.1:3001。`npm run typecheck` 执行类型检查，`npm test` 验证领域规则、文件故障、接口、保存队列和 Agent 协议。
+项目网站是静态介绍页；完整工作台需要按上述方式在本机运行。
 
-## 数据与导入导出
+## 文档与开发
 
-默认目录为应用根目录下的 `data/`，与启动命令所在目录无关。可将 `.env.example` 复制为 `.env`，设置绝对路径 `THINKRAPH_DATA_DIR`。每个目录仅允许一个服务进程写入，适用于本机普通磁盘。
+[本地使用与模型配置](docs/local-usage.md) · [架构设计](docs/architecture.md) · [实现与验收](docs/implementation.md) · [产品设计](docs/product-design.md)
 
-| 入口 | 内容与行为 |
-| --- | --- |
-| 顶部「导出 → 导出 JSON 图谱」 | `.thinkraph-graph.json`；当前图谱的节点、依赖、位置、类别、笔记、对话、资料、测验与汇总来源 |
-| 左侧「导入知识图谱」 | 校验并预览后追加独立副本；生成新图谱 ID，保留内部节点与学习记录 ID |
-| 空间名称菜单「导出学习空间」 | `.thinkraph-space.json`；全部未删除图谱、列表顺序、空间名称、当前图谱与界面偏好 |
-| 空间名称菜单「导入学习空间」 | 默认合并追加；也可整体恢复。整体恢复保留包中的图谱 ID，将原空间留作本地回退点 |
-
-JSON 是无损往返格式，Markdown 用于阅读。导出前会完成待保存内容，正在生成的回答会先停止并保存已收到的部分。导出包不含服务端密钥、保存版本、锁、备份或数据目录路径。资料只包含链接和备注，不打包链接目标网页。
-
-导入会显示图谱数量、节点数量、同名条目与影响范围。预览有效期为 30 分钟；预览后数据发生变化，需要重新预览。失败的网络重试沿用同次导入标识，不重复创建图谱。较新格式、重复 ID、循环依赖和悬空引用会报错，不静默删掉错误内容。
-
-默认限制：每图业务内容 10 MiB、单图导入包 12 MiB、空间包 100 MiB、200 张图谱、每图 1000 节点／5000 条依赖。文件与图谱数量限制见 `.env.example`。
-
-首次打开为空空间，可新建、加载示例或导入文件。旧浏览器原型数据可从「迁移浏览器旧数据」显式迁移；优先迁移图谱库，缺少图谱库时才迁移旧单图，保留浏览器原数据。已迁移的浏览器和旧图谱 ID 用于防重。
-
-## 保存、恢复与编辑
-
-编辑采用每图保存队列，暂停输入 500 ms 后保存，连续编辑最长等待 2 秒；拖拽仅在结束时保存位置。顶部显示等待、保存中、成功或失败。冲突保留本地草稿，可下载草稿或备份后加载服务器版本；切换图谱和导出不会跳过失败的保存。
-
-单图保存使用同目录临时文件、文件同步及原子替换，成功后更新可重建的列表索引。最近 10 次有效修订保存在 `backups/`。空间导入先写完整的新目录，再切换 `current.json`；最近 3 个空间回退点可从「恢复与回收站」预览并恢复。图谱删除为软删除，可从回收站找回。
-
-未知版本和损坏文件会明确报告并保留，不自动用空图或示例覆盖。损坏图谱可尝试恢复有效备份；不支持的新版本需使用兼容版本的软件读取。若 `current.json` 丢失或损坏，服务拒绝初始化新空空间，请保留整个数据目录并恢复指针文件。锁记录不完整时，需要先确认其他进程已经退出再人工处理。
-
-依赖采用无环有向图与 AND 前置条件。圈选多个节点后，汇总节点继承拓扑顺序最早节点的位置和全部父节点；删除选中的原节点，其外部子节点全部改接到汇总节点。原笔记进入汇总正文，来源标题留作历史记录，替换可一次撤销。连接线使用贝塞尔曲线。
-
-节点菜单支持编辑名称、类别和说明；手工添加默认「自建知识」。模板类别来自模板定义，AI 类别由模型按内容生成，类别不改变依赖语义。每个图谱独立保存资料、测验与作答记录。主题、标题收起、侧栏宽度和图谱视图保存在学习空间文件。
-
-## 模型配置
-
-本地编辑、笔记、学习路径、模板与摘录汇总不需要模型。未配置时明确显示「未配置模型」，不返回预设回答伪装成真实结果。
-
-在「空间与图谱设置 → 模型与服务配置」中填写兼容 Chat Completions 协议的端点、模型名称、超时和 API Key。配置保存在数据目录的 `config.json`，保存后立即生效，不需要重启；端点会追加 `/chat/completions`。平台只显示密钥是否已配置，API Key 使用密码框且不会回显原文。
-
-模型配置支持导入和导出。导出文件只包含端点、模型和超时，明确省略 `ai.apiKey`；导入不含密钥的配置时保留当前本地密钥。旧版本仍兼容 `.env` 中的 `THINKRAPH_AI_*` 变量作为首次启动回退，进入平台保存后以本地 JSON 为准。无鉴权的本地模型可留空密钥。
-
-对话以流式响应展示，支持停止和失败重试。上下文包含当前节点、前置摘要、笔记、资料和本节点对话。图谱生成、分支扩展、AI 汇总和测验均返回待采纳草稿；业务校验和版本检查通过后才写入。第一版不包含网页抓取、文件解析、向量检索、云端账户或协同编辑。
-
-学习助手使用 Streamdown 渲染 Markdown，支持标题、嵌套列表、表格、引用、代码高亮与复制、KaTeX 公式和中文强调。流式输出与已保存回复共用消息组件，停止或中断后的未闭合 Markdown 也保持格式；向上阅读时暂停自动跟随。节点笔记和笔记总览使用同一渲染器，JSON 中始终保存原始 Markdown 文本。
-
-## 代码
-
-- `shared/`：运行时 schema、可移植包、旧格式转换和 DAG 规则。
-- `server/storage/`：原子文件写入、单写锁、版本、导入提交、备份和恢复。
-- `server/app.ts`、`server/agent.ts`：API 与模型调用。
-- `src/state/workspace.ts`：按图加载、保存队列、冲突处理与导出。
-- `src/components/StorageDialog.tsx`：导入、迁移、回收站与恢复界面。
-- `docs/architecture.md`、`docs/implementation.md`：架构与验收记录。
+开发检查：`npm run typecheck`、`npm test`、`npm run build`。生产运行与 GitHub Pages 部署方式见[使用文档](docs/local-usage.md)。

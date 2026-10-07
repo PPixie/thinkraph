@@ -4,16 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#f5f8f4" />
-    <meta name="description" content="Thinkraph 图式 Agent 学习工作台。把知识点、学习依赖、对话和笔记放进同一张图谱，让探索有路径，让理解留下来。" />
-    <meta property="og:title" content="Thinkraph | 让每一次对话，长成知识体系" />
-    <meta property="og:description" content="知识有坐标，探索有路径。了解 Thinkraph，并在本机开始你的学习空间。" />
+    <meta name="theme-color" content="#f7f9f7" />
+    <meta name="description" content="Thinkraph 图式 Agent 学习工作台。将零散问答组织为知识节点，用前置依赖、节点对话、分支扩展、知识汇总和学习路径，构建可持续探索的知识体系。" />
+    <meta property="og:title" content="Thinkraph | 对话可以很长，理解需要结构" />
+    <meta property="og:description" content="把知识点连接起来，让对话、笔记和学习路径都有位置。本地运行，知识由你掌握。" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://ppixie.github.io/thinkraph/" />
     <meta property="og:image" content="https://ppixie.github.io/thinkraph/social-cover.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <title>Thinkraph | 让每一次对话，长成知识体系</title>
+    <title>Thinkraph | 对话可以很长，理解需要结构</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="preload" href="../node_modules/@fontsource/geist/files/geist-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
     <script>
       try {
         const preference = localStorage.getItem('thinkraph-site-theme');
@@ -23,88 +24,142 @@
   </head>
   <body>
     <a class="skip-link" href="#main">跳到主要内容</a>
-    <header class="site-header wrap">
-      <a class="brand" href="#" aria-label="Thinkraph 首页"><img src="./favicon.svg" alt="" width="32" height="32" />thinkraph<span>.</span></a>
-      <nav aria-label="主导航">
-        <a href="#explore">看看交互</a>
-        <a href="#start">本地开始</a>
-        <button id="theme-toggle" class="text-button" type="button" aria-label="切换深浅色">切换主题</button>
-        <a class="github-link" href="https://github.com/PPixie/thinkraph" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
-      </nav>
+    <header class="header-shell">
+      <div class="site-header wrap">
+        <a class="brand" href="#" aria-label="Thinkraph 首页"><img src="./favicon.svg" alt="" width="30" height="30" />thinkraph<span>.</span></a>
+        <nav aria-label="主导航">
+          <a href="#why" class="nav-why">为什么需要图谱</a>
+          <a href="#explore">看看交互</a>
+          <a href="#start">本地开始</a>
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-label="切换深浅色"><span id="theme-icon" aria-hidden="true"></span></button>
+          <a class="github-link" href="https://github.com/PPixie/thinkraph" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+        </nav>
+      </div>
     </header>
 
     <main id="main">
       <section class="hero wrap" aria-labelledby="hero-title">
         <div class="hero-copy">
           <p class="eyebrow">图式 Agent 学习工作台</p>
-          <h1 id="hero-title">让每一次对话，<span>长成知识体系。</span></h1>
-          <p class="hero-description">把知识点、学习依赖和节点对话放进同一张图。回到一个问题，就能接着学。</p>
+          <h1 id="hero-title">对话可以很长，<br /><span>理解需要结构。</span></h1>
+          <p class="hero-description">把零散问答组织成知识节点。连接前置概念，留下笔记，让每一次探索都有来路，也有下一步。</p>
           <div class="hero-actions">
-            <a class="button primary" href="#start">本地开始 <span aria-hidden="true">→</span></a>
-            <a class="button secondary" href="#explore">看看交互</a>
+            <a class="button primary" href="#start">本地开始 <span aria-hidden="true">↗</span></a>
+            <a class="button secondary" href="#explore">看看交互 <span aria-hidden="true">→</span></a>
           </div>
         </div>
-        <figure class="hero-visual">
-          <picture>
-            <source media="(prefers-color-scheme: dark)" srcset="./assets/workspace-dark.webp" />
-            <img id="hero-image" src="./assets/workspace-light.webp" alt="Thinkraph 知识图谱：前置概念连接到 RAG 节点，右侧学习助手保留节点对话。" width="1680" height="1050" fetchpriority="high" />
-          </picture>
-          <figcaption>知识结构与学习对话，在同一个工作台里。</figcaption>
-        </figure>
+        <div class="hero-visual" aria-label="可交互的知识图谱示例">
+          <div class="visual-heading"><span>大模型应用入门</span><span class="demo-label">交互示例</span></div>
+          <div id="graph-demo"><div class="graph-loading"><p>正在打开知识图谱…</p><div class="loading-nodes" aria-hidden="true"><span></span><span></span><span></span></div></div></div>
+          <noscript><p class="no-script">示例依赖：大语言模型 → 提示词工程 → RAG；向量与相似度 → Embedding → RAG。启用 JavaScript 可点击节点、保存示例笔记和完成自测。</p></noscript>
+        </div>
       </section>
 
-      <section class="story wrap" aria-labelledby="story-title">
-        <div class="story-copy">
-          <h2 id="story-title">聊过很多，<br />还想把它们连起来。</h2>
-          <p>长对话留下答案，图谱为理解找到位置。看清概念的关系，找到自己的下一步。</p>
+      <div class="principles wrap" aria-label="Thinkraph 的组织方式">
+        <p><strong>知识点</strong><span>是学习的基本单位</span></p>
+        <p><strong>依赖关系</strong><span>给理解一个顺序</span></p>
+        <p><strong>节点对话</strong><span>让上下文跟着问题走</span></p>
+      </div>
+
+      <section id="why" class="problem wrap" aria-labelledby="problem-title">
+        <div class="problem-intro">
+          <h2 id="problem-title">答案留在时间线上。<br />知识还需要自己的结构。</h2>
+          <p>对话式 Agent 擅长回答当下的问题。但一条越聊越长的记录，很难告诉你：概念怎样关联、哪里缺了基础、下一步该学什么。</p>
+          <div class="problem-list">
+            <article><h3>聊过，却找不到知识的位置。</h3><p>定义、例子和结论散落在消息里，回顾常常变成重新翻找。</p></article>
+            <article><h3>追问越来越深，主线越来越远。</h3><p>一个新问题带来另一个问题，前置概念与学习目标逐渐模糊。</p></article>
+            <article><h3>看懂了答案，不等于建立了理解。</h3><p>缺少自己的笔记、依赖关系与验证，很难把信息变成可复用的知识。</p></article>
+          </div>
         </div>
-        <img src="./assets/story-cover.webp" alt="杂乱的聊天卡片连接到清晰的知识图谱，表现知识零散、重点难找和不知下一步的学习痛点。" width="1672" height="941" loading="lazy" decoding="async" />
+        <div class="conversation-example">
+          <div class="conversation-heading"><span>一段熟悉的学习对话</span><span>示例</span></div>
+          <div class="conversation-message question"><span>你</span><p>RAG 是什么？</p></div>
+          <div class="conversation-message answer"><span>Agent</span><p>先检索相关资料，再让模型根据资料生成回答。</p></div>
+          <div class="conversation-message question"><span>你</span><p>那 Embedding 和向量有什么关系？</p></div>
+          <div class="conversation-message answer"><span>Agent</span><p>Embedding 将文本表示成向量，用于比较语义相似度。</p></div>
+          <div class="conversation-message question last-question"><span>你</span><p>等等。要理解 RAG，<br />我到底还需要先学什么？</p></div>
+          <p class="conversation-conclusion">回答有了。概念之间的关系，仍需要你来整理。</p>
+        </div>
       </section>
 
       <section id="explore" class="explore wrap" aria-labelledby="explore-title">
         <div class="section-heading">
-          <h2 id="explore-title">一个节点，接着探索。</h2>
-          <p>从局部问题出发，始终看得见全貌。</p>
+          <p class="eyebrow">让知识有位置</p>
+          <h2 id="explore-title">从一个问题，走向一张知识地图。</h2>
+          <p>把对话放回知识结构，局部可以深入，全貌始终可见。</p>
         </div>
-        <div class="product-tabs" role="tablist" aria-label="交互场景">
-          <button id="tab-node" role="tab" aria-selected="true" aria-controls="product-panel" type="button" data-scene="node">节点学习</button>
-          <button id="tab-branch" role="tab" aria-selected="false" aria-controls="product-panel" tabindex="-1" type="button" data-scene="branch">分支扩展</button>
-          <button id="tab-path" role="tab" aria-selected="false" aria-controls="product-panel" tabindex="-1" type="button" data-scene="path">学习路径</button>
-        </div>
-        <div id="product-panel" class="product-panel" role="tabpanel" aria-labelledby="tab-node">
-          <div class="product-image">
-            <img id="scene-image" src="./assets/workspace-light.webp" alt="RAG 节点及其学习对话，前置概念在画布上可见。" width="1680" height="1050" loading="lazy" decoding="async" />
+        <div class="feature-layout">
+          <div class="product-tabs" role="tablist" aria-label="交互场景" aria-orientation="vertical">
+            <button id="tab-node" role="tab" aria-selected="true" aria-controls="product-panel" type="button" data-scene="node"><span class="feature-icon" data-icon="node" aria-hidden="true"></span><span><strong>围绕节点学习</strong><small>概念、对话、笔记与资料放在一起</small></span><span class="tab-arrow" aria-hidden="true">↗</span></button>
+            <button id="tab-branch" role="tab" aria-selected="false" aria-controls="product-panel" tabindex="-1" type="button" data-scene="branch"><span class="feature-icon" data-icon="branch" aria-hidden="true"></span><span><strong>由 Agent 扩展分支</strong><small>先看草稿，再选择值得探索的方向</small></span><span class="tab-arrow" aria-hidden="true">↗</span></button>
+            <button id="tab-summary" role="tab" aria-selected="false" aria-controls="product-panel" tabindex="-1" type="button" data-scene="summary"><span class="feature-icon" data-icon="summary" aria-hidden="true"></span><span><strong>把知识汇总成节点</strong><small>圈选相关概念，整理笔记与学习联系</small></span><span class="tab-arrow" aria-hidden="true">↗</span></button>
+            <button id="tab-path" role="tab" aria-selected="false" aria-controls="product-panel" tabindex="-1" type="button" data-scene="path"><span class="feature-icon" data-icon="path" aria-hidden="true"></span><span><strong>按依赖找到下一步</strong><small>从已有基础出发，沿学习路径前进</small></span><span class="tab-arrow" aria-hidden="true">↗</span></button>
           </div>
-          <div class="product-description" aria-live="polite">
-            <h3 id="scene-title">问题有位置，上下文跟着走。</h3>
-            <p id="scene-description">点击一个知识点，查看它的前置知识、对话、笔记和资料。下次回来，继续已有的探索。</p>
-            <p id="scene-detail" class="detail">对话按节点保存，切换主题也能回到原来的问题。</p>
+          <div id="product-panel" class="product-panel" role="tabpanel" aria-labelledby="tab-node" tabindex="0">
+            <div class="product-description" aria-live="polite">
+              <h3 id="scene-title">问题有位置，上下文跟着走。</h3>
+              <p id="scene-description">选择一个知识点，进入它自己的学习对话。Agent 结合当前节点、前置摘要、笔记和资料回答，切换节点后也能回到原来的探索。</p>
+            </div>
+            <figure class="product-image">
+              <img id="scene-image" src="./assets/workspace-light.webp" alt="Thinkraph 真实工作台：选择 RAG 节点，右侧显示节点对话与前置知识上下文。" width="1680" height="1050" loading="lazy" decoding="async" />
+              <div class="image-error" hidden><p>截图暂时无法加载。</p><button id="retry-image" type="button">重试</button></div>
+              <figcaption><span id="scene-detail">每个知识点保留独立的对话记录。</span><span>真实工作台截图</span></figcaption>
+            </figure>
           </div>
         </div>
-        <noscript><p>在本地工作台中，还可以预览并采纳 Agent 分支建议，或查看按前置知识组织的学习路径。</p></noscript>
+      </section>
+
+      <section class="learning-loop wrap" aria-labelledby="loop-title">
+        <div class="section-heading">
+          <h2 id="loop-title">让理解留下来，再继续向前。</h2>
+          <p>从建立骨架到检验掌握，知识结构随着你的学习持续生长。</p>
+        </div>
+        <div class="loop-grid">
+          <article class="loop-item"><span class="loop-icon" data-icon="target" aria-hidden="true"></span><h3>从目标建立骨架</h3><p>用模板、手工编辑或 Agent 草稿，建立知识点与前置依赖。</p></article>
+          <article class="loop-item"><span class="loop-icon" data-icon="notes" aria-hidden="true"></span><h3>用自己的话记下来</h3><p>摘录回答，补充解释。笔记与参考资料始终属于对应节点。</p></article>
+          <article class="loop-item"><span class="loop-icon" data-icon="quiz" aria-hidden="true"></span><h3>用自测检查理解</h3><p>用题目与解析检查掌握程度，理解状态由你确认。</p></article>
+          <article class="loop-item"><span class="loop-icon" data-icon="path" aria-hidden="true"></span><h3>沿着依赖继续探索</h3><p>看见下一步和所需基础，也可以自由进入感兴趣的节点。</p></article>
+        </div>
+        <p class="loop-note">聊天消息不会自动变成知识节点。结构的建立、草稿的采纳与理解的确认，都由你决定。</p>
       </section>
 
       <section id="start" class="start wrap" aria-labelledby="start-title">
         <div class="start-copy">
-          <h2 id="start-title">在本机，开始你的学习空间。</h2>
-          <p>安装 Node.js 22.21.1 或更新版本，然后运行以下命令。在浏览器打开 <a href="http://127.0.0.1:5173" target="_blank" rel="noopener noreferrer">127.0.0.1:5173</a>。</p>
-          <p class="local-note">图谱和笔记保存为本地 JSON 文件。配置模型后即可使用 Agent；手工编辑、笔记和学习路径可直接使用。</p>
+          <h2 id="start-title">你的知识，<br />留在自己的学习空间。</h2>
+          <p>图谱、对话和笔记保存在本机 JSON 文件中。通过图谱或整个学习空间的导入导出，带走完整的学习记录。</p>
+          <div class="local-features"><p><span data-icon="file" aria-hidden="true"></span>本地文件保存与备份恢复</p><p><span data-icon="export" aria-hidden="true"></span>图谱 / 学习空间 JSON 导入导出</p><p><span data-icon="model" aria-hidden="true"></span>支持兼容 Chat Completions 的模型端点</p></div>
           <a class="inline-link" href="https://github.com/PPixie/thinkraph#readme" target="_blank" rel="noopener noreferrer">查看完整说明 <span aria-hidden="true">↗</span></a>
         </div>
-        <div class="setup">
-          <div class="setup-header"><span>终端</span><button type="button" id="copy-setup">复制命令</button></div>
-          <pre><code id="setup-command">git clone https://github.com/PPixie/thinkraph.git
+        <div class="setup-area">
+          <div class="setup">
+            <div class="setup-header"><span>在终端运行</span><button type="button" id="copy-setup"><span data-icon="copy" aria-hidden="true"></span><span id="copy-label">复制命令</span></button></div>
+            <pre><code id="setup-command">git clone https://github.com/PPixie/thinkraph.git
 cd thinkraph
 npm install
 npm run dev</code></pre>
-          <p id="copy-status" role="status" class="copy-status"></p>
+            <p id="copy-status" role="status" class="copy-status"></p>
+          </div>
+          <p class="setup-requirement">需要 Node.js 22.21.1 或更新版本。</p>
+          <p class="setup-link">启动后打开 <a href="http://127.0.0.1:5173" target="_blank" rel="noopener noreferrer">127.0.0.1:5173 <span aria-hidden="true">↗</span></a></p>
+          <p class="setup-note">在「模型与服务配置」中连接模型，即可使用 Agent。手工编辑、笔记、学习路径和摘录汇总无需模型。</p>
+        </div>
+      </section>
+
+      <section class="faq wrap" aria-labelledby="faq-title">
+        <h2 id="faq-title">开始前，你可能想知道。</h2>
+        <div class="faq-list">
+          <details><summary>Thinkraph 和普通聊天界面有什么区别？<span aria-hidden="true">+</span></summary><p>普通对话主要按消息顺序展开。Thinkraph 以知识点为基本单位，用有向无环图表达学习依赖，并把每个节点的对话、笔记、资料和理解状态放在一起。连线表示前置知识，帮助组织学习顺序。</p></details>
+          <details><summary>Agent 会直接修改我的图谱吗？<span aria-hidden="true">+</span></summary><p>图谱生成、分支扩展、AI 汇总和测验均先展示待采纳草稿。你核对并采纳后，经过校验才写入图谱。知识汇总会替换选中节点，保留汇总正文与来源标题，并支持一次撤销。</p></details>
+          <details><summary>需要模型才能使用吗？知识会发往哪里？<span aria-hidden="true">+</span></summary><p>不需要模型也能手工编辑图谱、整理笔记、查看学习路径和做摘录汇总。使用 Agent 时，需要连接兼容的模型端点；请求所包含的节点内容、前置摘要、笔记、资料与对话会发送到该端点。本地保存不等于远程模型调用也离线。</p></details>
+          <details><summary>这个网站可以直接运行完整工作台吗？<span aria-hidden="true">+</span></summary><p>这里是静态产品介绍，首页图谱使用固定示例内容演示选择节点、笔记和自测，不调用模型，也不保存到本地学习空间。完整工作台需要按上方说明在本机启动前端与 Fastify 服务；当前版本不含云端账户、协同编辑、网页抓取或文件解析。</p></details>
         </div>
       </section>
     </main>
 
     <footer class="site-footer wrap">
-      <p>thinkraph. <span>理解一点，连接一点。</span></p>
-      <p>此页面为产品介绍。完整学习工作台在本机运行。</p>
+      <a class="brand footer-brand" href="#" aria-label="回到 Thinkraph 首页">thinkraph<span>.</span></a>
+      <p>理解一点，连接一点。</p>
+      <a href="https://github.com/PPixie/thinkraph" target="_blank" rel="noopener noreferrer">在 GitHub 查看项目 <span aria-hidden="true">↗</span></a>
     </footer>
     <script type="module" src="./main.js"></script>
   </body>
