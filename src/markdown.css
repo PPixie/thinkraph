@@ -1,0 +1,62 @@
+/* Scoped to the assistant: Streamdown's semantic hooks keep our native theme
+   independent of Tailwind, with identical typography during and after a stream. */
+.assistant-message { min-width: 0; padding-bottom: 4px; }
+.assistant-name .assistant-status { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; }
+.assistant-status i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: assistant-pulse 1.4s ease-in-out infinite; }
+.assistant-message[aria-busy='true'] .message-actions { visibility: hidden; }
+.assistant-placeholder { display: grid; gap: 10px; padding: 5px 0; }
+.assistant-placeholder span { height: 9px; border-radius: 3px; background: var(--line); animation: assistant-pulse 1.4s ease-in-out infinite; }
+.assistant-placeholder span:nth-child(2) { width: 88%; }
+.assistant-placeholder span:nth-child(3) { width: 58%; }
+@keyframes assistant-pulse { 50% { opacity: .4; } }
+
+.assistant-markdown { min-width: 0; max-width: 100%; font-size: 13px; line-height: 1.85; color: var(--text); overflow-wrap: anywhere; white-space: normal; }
+.assistant-markdown > * { margin: 0 0 13px; }
+.assistant-markdown > :first-child { margin-top: 0; }
+.assistant-markdown > :last-child { margin-bottom: 0; }
+.assistant-markdown :is(h1, h2, h3, h4, h5, h6) { margin: 22px 0 9px; font-weight: 600; line-height: 1.5; color: var(--text); letter-spacing: -.2px; }
+.assistant-markdown h1 { font-size: 20px; }
+.assistant-markdown h2 { font-size: 17px; padding-bottom: 7px; border-bottom: 1px solid var(--line); }
+.assistant-markdown h3 { font-size: 15px; }
+.assistant-markdown :is(h4, h5, h6) { font-size: 13px; }
+.assistant-markdown strong { font-weight: 600; color: var(--text); }
+.assistant-markdown a { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); }
+.assistant-markdown a:hover { text-decoration-color: var(--accent); }
+.assistant-markdown :is(ul, ol) { padding-left: 1.65em; }
+.assistant-markdown ul { list-style: disc outside; }
+.assistant-markdown ol { list-style: decimal outside; }
+.assistant-markdown li { padding: 2px 0 2px 2px; }
+.assistant-markdown li::marker { color: var(--muted); }
+.assistant-markdown li > p { margin: 3px 0; }
+.assistant-markdown li :is(ul, ol) { margin: 4px 0; }
+.assistant-markdown .task-list-item { list-style: none; }
+.assistant-markdown input[type='checkbox'] { margin: 0 5px 0 -1.35em; accent-color: var(--accent); vertical-align: middle; }
+.assistant-markdown blockquote { margin-left: 0; margin-right: 0; padding: 9px 13px; border-left: 3px solid var(--accent); border-radius: 0 5px 5px 0; background: var(--accent-light); color: var(--muted); }
+.assistant-markdown blockquote > :last-child { margin-bottom: 0; }
+.assistant-markdown hr { border: 0; border-top: 1px solid var(--line); margin: 21px 0; }
+.assistant-markdown img { display: block; max-width: 100%; height: auto; border-radius: 6px; }
+.assistant-markdown :is(code, pre) { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 11.5px; font-variant-ligatures: none; tab-size: 2; }
+.assistant-markdown :not(pre) > code { padding: 2px 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-subtle); color: var(--accent-strong); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.assistant-markdown [data-streamdown='code-block'] { position: relative; min-width: 0; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; background: var(--surface-subtle); content-visibility: visible !important; }
+.assistant-markdown [data-streamdown='code-block-header'] { display: flex; align-items: center; min-height: 35px; padding: 6px 44px 6px 12px; border-bottom: 1px solid var(--line); font: 10px/1.5 'SFMono-Regular', Consolas, monospace; color: var(--muted); }
+.assistant-markdown [data-streamdown='code-block-header'] + div { position: absolute; top: 4px; right: 6px; }
+.assistant-markdown [data-streamdown='code-block-actions'] { display: flex; align-items: center; }
+.assistant-markdown [data-streamdown='code-block-copy-button'] { display: grid; place-items: center; width: 27px; height: 27px; padding: 5px; border: 0; border-radius: 4px; color: var(--muted); background: transparent; }
+.assistant-markdown [data-streamdown='code-block-copy-button']:hover { background: var(--line); color: var(--text); }
+.assistant-markdown [data-streamdown='code-block-body'] { padding: 12px; overflow: auto; scrollbar-width: thin; background: var(--surface); }
+.assistant-markdown pre { margin: 0; line-height: 1.8; white-space: pre; overflow-wrap: normal; }
+.assistant-markdown pre code { display: block; width: max-content; min-width: 100%; }
+.assistant-markdown pre code > span { display: block; min-height: 1.8em; }
+.assistant-markdown pre span[style] { color: var(--sdm-c, inherit); background-color: var(--sdm-tbg, transparent); }
+[data-theme='dark'] .assistant-markdown pre span[style] { color: var(--shiki-dark, var(--sdm-c, inherit)); background-color: var(--shiki-dark-bg, var(--sdm-tbg, transparent)); }
+.assistant-markdown .markdown-table { max-width: 100%; overflow: auto; border: 1px solid var(--line-strong); border-radius: 7px; scrollbar-width: thin; }
+.assistant-markdown table { width: 100%; border-collapse: collapse; font-size: 12px; line-height: 1.7; }
+.assistant-markdown :is(th, td) { min-width: 90px; padding: 9px 11px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.assistant-markdown th { font-weight: 600; background: var(--surface-subtle); white-space: nowrap; }
+.assistant-markdown tr:last-child td { border-bottom: 0; }
+.assistant-markdown td + td, .assistant-markdown th + th { border-left: 1px solid var(--line); }
+.assistant-markdown .katex { font-size: 1.08em; }
+.assistant-markdown .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 8px 0; }
+.assistant-markdown [data-footnotes] { margin-top: 20px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+.note-entry > .assistant-markdown { margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .assistant-status i, .assistant-placeholder span { animation: none; } }

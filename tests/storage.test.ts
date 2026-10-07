@@ -1,0 +1,223 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import { randomUUID as id } from 'node:crypto';
+import { Repository } from '../server/storage/repository.js';
+import { templateGraph } from '../shared/migrations.js';
+import { validateGraph } from '../shared/schemas.js';
+import { buildApp } from '../server/app.js';
+import { config } from '../server/config.js';
+const empty = (title = '测试图谱') => validateGraph({ title, nodes: [], edges: [] });
+async function fixture(t: any, fault?: (point: string) => void) {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'thinkraph-'));
+  const options = { dataDir, graphMaxBytes: 10 * 1024 * 1024, spaceMaxBytes: 100 * 1024 * 1024, maxGraphs: 200, fault };
+  const repo = await new Repository(options).open();
+  t.after(async () => { await repo.close(); await fs.rm(dataDir, { recursive: true, force: true }); });
+  return { repo, options, dataDir };
+}
+test('atomic save, optimistic concurrency, idempotency and revisions', async t => {
+  const { repo } = await fixture(t); const graphId = id(), mutationId = id();
+  const g = await repo.create(repo.generationId, graphId, mutationId, empty());
+  assert.equal((await repo.create(repo.generationId, graphId, mutationId, empty())).revision, 1);
+  const update = id(), body = { ...g, title: '更新' };
+  const results = await Promise.allSettled([repo.save(repo.generationId, g.id, 1, update, body), repo.save(repo.generationId, g.id, 1, id(), empty('冲突'))]);
+  assert.equal(results[0].status, 'fulfilled'); assert.equal(results[1].status, 'rejected');
+  assert.equal((await repo.save(repo.generationId, g.id, 1, update, body)).revision, 2);
+  await assert.rejects(repo.save(repo.generationId, g.id, 2, update, empty('不同内容')), { code: 'MUTATION_REUSED' });
+  assert.equal((await repo.backups(g.id)).length, 1);
+  const restored = await repo.restoreBackup(repo.generationId, g.id, 1, 2, id()); assert.equal(restored.title, '测试图谱'); assert.equal(restored.revision, 3);
+});
+test('catalog failure after document commit reports successful save and rebuilds', async t => {
+  let fail = false; const { repo, options, dataDir } = await fixture(t, point => { if (fail && point === 'beforeCatalog') throw Error('disk fault'); });
+  const g = await repo.create(repo.generationId, id(), id(), empty()); fail = true;
+  assert.equal((await repo.save(repo.generationId, g.id, 1, id(), empty('已保存'))).revision, 2);
+  assert.ok(repo.warnings.length); await repo.close(); fail = false;
+  await fs.writeFile(path.join(dataDir, 'generations', repo.generationId, 'catalog.json'), 'broken');
+  const reopened = await new Repository(options).open(); t.after(() => reopened.close()); assert.equal((await reopened.state()).graphs[0]?.title, '已保存');
+});
+test('four import/export operations preserve learning content, map IDs and isolate generations', async t => {
+  const { repo } = await fixture(t); const template = templateGraph();
+  const original = await repo.create(repo.generationId, template.id, id(), template);
+  const pack = await repo.exportGraph(original.id, 1, repo.generationId);
+  assert.ok(!('revision' in pack.graph)); assert.ok(!('lastMutation' in pack.graph)); assert.equal(pack.graph.messages.rag[1].sourceIds.length, 1);
+  const preview = await repo.preview(repo.generationId, pack); const mutation = id();
+  const receipt = await repo.commit(repo.generationId, preview.importId, mutation);
+  const copy = await repo.get(receipt.graphIds[0]); assert.notEqual(copy.id, original.id); assert.deepEqual(copy.notes, original.notes); assert.deepEqual(copy.sources, original.sources);
+  assert.deepEqual(copy.nodes.map(n => n.data.description), original.nodes.map(n => n.data.description));
+  assert.deepEqual(await repo.commit(repo.generationId, preview.importId, mutation), receipt);
+  const space = await repo.exportWorkspace(repo.generationId, {}), oldGeneration = repo.generationId;
+  const merge = await repo.preview(oldGeneration, space), merged = await repo.commit(oldGeneration, merge.importId, id());
+  assert.notEqual(merged.generationId, oldGeneration); assert.equal((await repo.state()).graphs.length, 4);
+  await assert.rejects(repo.save(oldGeneration, original.id, 1, id(), empty()), { code: 'GENERATION_CONFLICT' });
+  const restore = await repo.preview(repo.generationId, space, 'restore', true); await repo.commit(repo.generationId, restore.importId, id());
+  assert.equal((await repo.state()).graphs.length, 2); assert.equal((await repo.get(original.id)).revision, 1);
+  const snapshots = await repo.snapshots(); assert.equal(snapshots.length, 2);
+  const rollback = await repo.previewSnapshot(repo.generationId, snapshots.find(s => s.graphCount === 4)!.id); await repo.commit(repo.generationId, rollback.importId, id());
+  assert.equal((await repo.state()).graphs.length, 4);
+});
+test('failed staging leaves current workspace unchanged', async t => {
+  let fail = false; const { repo } = await fixture(t, point => { if (fail && point === 'stageGraph') throw Error('ENOSPC'); });
+  await repo.create(repo.generationId, id(), id(), empty()); const pack = await repo.exportWorkspace(repo.generationId, {});
+  const preview = await repo.preview(repo.generationId, pack), generation = repo.generationId; fail = true;
+  await assert.rejects(repo.commit(generation, preview.importId, id())); assert.equal(repo.generationId, generation); assert.equal((await repo.state()).graphs.length, 1);
+});
+test('crash after pointer switch recovers durable import receipt, retry never duplicates', async t => {
+  let fail = false; const { repo, options } = await fixture(t, point => { if (fail && point === 'afterPointer') throw Error('crash'); });
+  await repo.create(repo.generationId, id(), id(), empty()); const pack = await repo.exportWorkspace(repo.generationId, {});
+  const preview = await repo.preview(repo.generationId, pack), generation = repo.generationId, mutation = id(); fail = true;
+  await assert.rejects(repo.commit(generation, preview.importId, mutation), { code: 'RECOVERY_REQUIRED' }); await repo.close(); fail = false;
+  const reopened = await new Repository(options).open(); t.after(() => reopened.close());
+  const receipt = await reopened.commit(generation, preview.importId, mutation); assert.equal(receipt.graphIds.length, 1); assert.equal((await reopened.state()).graphs.length, 2);
+});
+test('stale previews, invalid packages and cycles never partially import', async t => {
+  const { repo } = await fixture(t); const g = await repo.create(repo.generationId, id(), id(), empty());
+  const pack = await repo.exportWorkspace(repo.generationId, {}), preview = await repo.preview(repo.generationId, pack);
+  await repo.save(repo.generationId, g.id, 1, id(), empty('later'));
+  await assert.rejects(repo.commit(repo.generationId, preview.importId, id()), { code: 'PREVIEW_STALE' });
+  const bad = structuredClone(pack); bad.graphs.push({ ...bad.graphs[0] });
+  await assert.rejects(repo.preview(repo.generationId, bad), { code: 'INVALID_CATALOG' });
+  const cyclic = templateGraph(); cyclic.edges.push({ id: 'loop', source: 'rag', target: 'llm', relation: 'prerequisite' });
+  await assert.rejects(repo.create(repo.generationId, id(), id(), cyclic), { code: 'CYCLE' });
+  assert.equal((await repo.state()).graphs.length, 1);
+});
+test('corrupt file is reported, not silently replaced; valid backup can recover', async t => {
+  const { repo, options, dataDir } = await fixture(t); const g = await repo.create(repo.generationId, id(), id(), empty());
+  await repo.save(repo.generationId, g.id, 1, id(), empty('second')); await repo.close();
+  const file = path.join(dataDir, 'generations', repo.generationId, 'graphs', `${g.id}.json`); await fs.writeFile(file, '{truncated');
+  const reopened = await new Repository(options).open(); t.after(() => reopened.close());
+  assert.equal(reopened.issues.length, 1); await assert.rejects(reopened.exportWorkspace(reopened.generationId, {}), { code: 'STORAGE_ISSUES' });
+  await reopened.restoreBackup(reopened.generationId, g.id, 1, null, id()); assert.equal(reopened.issues.length, 0); assert.equal((await reopened.get(g.id)).title, g.title);
+});
+test('single writer lock and API boundaries', async t => {
+  const { repo, options } = await fixture(t); await assert.rejects(new Repository(options).open(), { code: 'LOCKED' });
+  const app = await buildApp(repo, { ...config, ...options }); t.after(() => app.close());
+  const reject = await app.inject({ method: 'POST', url: '/api/graphs', headers: { origin: 'https://untrusted.example' }, payload: {} }); assert.equal(reject.statusCode, 403);
+  const invalid = await app.inject({ method: 'POST', url: '/api/graphs', payload: { id: id(), mutationId: id(), document: empty() } }); assert.equal(invalid.statusCode, 400);
+  const created = await app.inject({ method: 'POST', url: '/api/graphs', headers: { 'x-workspace-generation': repo.generationId }, payload: { id: id(), mutationId: id(), document: empty() } }); assert.equal(created.statusCode, 200);
+  assert.equal(created.json().revision, 1);
+});
+test('local model config is editable and export/import never exposes the API key', async t => {
+  const { repo, options, dataDir } = await fixture(t);
+  const runtime = { ...config, ...options, ai: { ...config.ai, baseUrl: '', apiKey: '', model: '' }, aiSource: 'default' as const };
+  const app = await buildApp(repo, runtime); t.after(() => app.close());
+  const secret = 'top-secret-model-key';
+  const saved = await app.inject({ method: 'PATCH', url: '/api/config', payload: { ai: { baseUrl: 'https://model.example/v1', model: 'model-a', timeoutMs: 5000, apiKey: secret } } });
+  assert.equal(saved.statusCode, 200); assert.equal(saved.json().ai.apiKeyConfigured, true); assert.ok(!saved.body.includes(secret));
+  const stored = JSON.parse(await fs.readFile(path.join(dataDir, 'config.json'), 'utf8'));
+  assert.equal(stored.ai.apiKey, secret); assert.equal(stored.ai.model, 'model-a');
+  const viewed = await app.inject({ method: 'GET', url: '/api/config' });
+  assert.equal(viewed.statusCode, 200); assert.ok(!viewed.body.includes(secret)); assert.equal(viewed.json().ai.apiKeyConfigured, true);
+  const exported = await app.inject({ method: 'GET', url: '/api/config/export' });
+  assert.equal(exported.statusCode, 200); assert.ok(!exported.body.includes(secret)); assert.deepEqual(exported.json().secretsOmitted, ['ai.apiKey']);
+  const imported = await app.inject({ method: 'POST', url: '/api/config/import', payload: { data: exported.json() } });
+  assert.equal(imported.statusCode, 200); assert.equal(imported.json().ai.apiKeyConfigured, true);
+  const cleared = await app.inject({ method: 'PATCH', url: '/api/config', payload: { ai: { clearApiKey: true } } });
+  assert.equal(cleared.statusCode, 200); assert.equal(cleared.json().ai.apiKeyConfigured, false); assert.ok(!cleared.body.includes(secret));
+});
+test('faults before and after graph rename preserve a complete committed document', async t => {
+  let point = ''; const { repo } = await fixture(t, actual => { if (actual === point) throw Error('injected crash'); });
+  const g = await repo.create(repo.generationId, id(), id(), empty()); point = 'afterTempWrite';
+  await assert.rejects(repo.save(repo.generationId, g.id, 1, id(), empty('not committed')));
+  assert.equal((await repo.get(g.id)).title, '测试图谱');
+  point = 'afterRename'; const mutation = id(); const saved = await repo.save(repo.generationId, g.id, 1, mutation, empty('committed'));
+  assert.equal(saved.title, 'committed'); point = ''; assert.equal((await repo.save(repo.generationId, g.id, 1, mutation, empty('committed'))).revision, 2);
+});
+test('legacy browser library migrates explicitly and deduplicates by browser and legacy ID', async t => {
+  const { repo } = await fixture(t);
+  const legacy = { activeId: 'old-a', maps: [{ id: 'old-a', graph: { title: '旧图谱', nodes: [{ id: 'rag', position: { x: 0, y: 0 }, data: { title: '自建 RAG 同名节点' } }], edges: [], notes: { rag: ['原文\n保持不变'] } } }] };
+  const preview = await repo.preview(repo.generationId, legacy, 'merge', false, 'browser-one');
+  const receipt = await repo.commit(repo.generationId, preview.importId, id()); const saved = await repo.get(receipt.graphIds[0]);
+  assert.equal(saved.notes.rag[0].content, '原文\n保持不变'); assert.deepEqual(saved.sources, {}); assert.deepEqual(saved.quizzes, {});
+  assert.equal(saved.nodes[0].data.description, '');
+  await assert.rejects(repo.preview(repo.generationId, legacy, 'merge', false, 'browser-one'), { code: 'ALREADY_MIGRATED' });
+});
+test('node descriptions survive editing, reload and Markdown export independently of summaries', async t => {
+  const { repo, options } = await fixture(t);
+  const original = await repo.create(repo.generationId, id(), id(), templateGraph());
+  const body = structuredClone(original);
+  body.nodes[0].data.description = '详细介绍独立保存。\n\n这里是概念机制与一个例子。';
+  const saved = await repo.save(repo.generationId, original.id, original.revision, id(), body);
+  await repo.close();
+  const reopened = await new Repository(options).open(); t.after(() => reopened.close());
+  const loaded = await reopened.get(saved.id);
+  assert.equal(loaded.nodes[0].data.summary, original.nodes[0].data.summary);
+  assert.equal(loaded.nodes[0].data.description, body.nodes[0].data.description);
+  const app = await buildApp(reopened, { ...config, ...options }); t.after(() => app.close());
+  const response = await app.inject({ url: `/api/graphs/${loaded.id}/export?format=markdown&revision=${loaded.revision}`, headers: { 'x-workspace-generation': reopened.generationId } });
+  assert.equal(response.statusCode, 200);
+  assert.ok(response.body.includes(loaded.nodes[0].data.summary));
+  assert.ok(response.body.includes(loaded.nodes[0].data.description));
+});
+test('expired previews and unsupported schemas are refused; empty space restore is explicit', async t => {
+  const { repo, dataDir } = await fixture(t); const space = await repo.exportWorkspace(repo.generationId, {});
+  const preview = await repo.preview(repo.generationId, space);
+  const file = path.join(dataDir, 'imports', `${preview.importId}.preview.json`), raw = JSON.parse(await fs.readFile(file, 'utf8'));
+  raw.expiresAt = '2000-01-01T00:00:00.000Z'; await fs.writeFile(file, JSON.stringify(raw));
+  await assert.rejects(repo.commit(repo.generationId, preview.importId, id()), { code: 'PREVIEW_EXPIRED' });
+  await assert.rejects(repo.preview(repo.generationId, { ...space, formatVersion: 99 }), { code: 'UNSUPPORTED_FORMAT' });
+  await repo.create(repo.generationId, id(), id(), empty()); const restore = await repo.preview(repo.generationId, space, 'restore');
+  assert.equal(restore.graphCount, 0); assert.equal(restore.currentGraphCount, 1); await repo.commit(repo.generationId, restore.importId, id());
+  assert.equal((await repo.state()).workspace.activeGraphId, null); assert.equal((await repo.state()).graphs.length, 0);
+});
+test('limits reject oversized and incomplete packages without changing the workspace', async t => {
+  const { repo } = await fixture(t); repo.options.maxGraphs = 1;
+  const graph = await repo.create(repo.generationId, id(), id(), empty());
+  await assert.rejects(repo.create(repo.generationId, id(), id(), empty()), { code: 'TOO_MANY_GRAPHS' });
+  const pack = await repo.exportWorkspace(repo.generationId, {});
+  await assert.rejects(repo.preview(repo.generationId, pack), { code: 'TOO_MANY_GRAPHS' });
+  await assert.rejects(repo.preview(repo.generationId, { ...pack, graphs: [] }), { code: 'INVALID_CATALOG' });
+  repo.options.graphMaxBytes = 100;
+  await assert.rejects(repo.save(repo.generationId, graph.id, 1, id(), empty('x'.repeat(300))), { code: 'GRAPH_TOO_LARGE' });
+  repo.options.graphMaxBytes = 10 * 1024 * 1024;
+  assert.equal((await repo.get(graph.id)).revision, 1);
+});
+test('unknown graph schema is preserved and never overwritten by ordinary writes or backup restore', async t => {
+  const { repo, options, dataDir } = await fixture(t); const g = await repo.create(repo.generationId, id(), id(), empty());
+  await repo.save(repo.generationId, g.id, 1, id(), empty('second')); await repo.close();
+  const file = path.join(dataDir, 'generations', repo.generationId, 'graphs', `${g.id}.json`), raw = JSON.parse(await fs.readFile(file, 'utf8'));
+  raw.schemaVersion = 99; await fs.writeFile(file, JSON.stringify(raw));
+  const reopened = await new Repository(options).open(); t.after(() => reopened.close());
+  assert.equal(reopened.issues[0].code, 'UNSUPPORTED_SCHEMA');
+  await assert.rejects(reopened.restoreBackup(reopened.generationId, g.id, 1, null, id()), { code: 'UNSUPPORTED_SCHEMA' });
+  assert.equal(JSON.parse(await fs.readFile(file, 'utf8')).schemaVersion, 99);
+});
+test('workspace patches change only specified fields and never reset other preferences', async t => {
+  const { repo } = await fixture(t); const graph = await repo.create(repo.generationId, id(), id(), empty());
+  await repo.patchWorkspace(repo.generationId, repo.workspace.revision, { theme: 'dark', headerCollapsed: true, panelWidths: { left: 250, right: 400 } });
+  await repo.patchWorkspace(repo.generationId, repo.workspace.revision, { graphViews: { [graph.id]: { viewport: { x: 15, y: 25, zoom: 0.8 } } } });
+  assert.equal(repo.workspace.theme, 'dark'); assert.equal(repo.workspace.headerCollapsed, true); assert.deepEqual(repo.workspace.panelWidths, { left: 250, right: 400 });
+  await repo.patchWorkspace(repo.generationId, repo.workspace.revision, { name: '重命名' });
+  assert.equal(repo.workspace.graphViews[graph.id].viewport?.x, 15);
+});
+test('wide assistant panels persist across workspace reloads', async t => {
+  const { repo, options } = await fixture(t);
+  await repo.patchWorkspace(repo.generationId, repo.workspace.revision, { panelWidths: { left: 250, right: 1600 } });
+  await repo.close();
+  const reopened = await new Repository(options).open();
+  t.after(() => reopened.close());
+  assert.deepEqual(reopened.workspace.panelWidths, { left: 250, right: 1600 });
+  assert.deepEqual(reopened.issues, []);
+});
+test('workspace merge rewrites every graph reference and applies preferences only when requested', async t => {
+  const { repo } = await fixture(t); const template = templateGraph(); await repo.create(repo.generationId, template.id, id(), template);
+  const pack = await repo.exportWorkspace(repo.generationId, {});
+  pack.workspace.settings.theme = 'dark'; pack.workspace.settings.headerCollapsed = true;
+  pack.workspace.settings.graphViews[template.id] = { selectedNodeId: 'rag', viewport: { x: 10, y: 20, zoom: 0.6 } };
+  const spaceId = repo.workspace.id, spaceName = repo.workspace.name;
+  const preview = await repo.preview(repo.generationId, pack, 'merge', true); const receipt = await repo.commit(repo.generationId, preview.importId, id());
+  const newId = receipt.idMap[template.id]; assert.notEqual(newId, template.id);
+  assert.equal(repo.workspace.id, spaceId); assert.equal(repo.workspace.name, spaceName); assert.equal(repo.workspace.theme, 'dark');
+  assert.equal(repo.workspace.activeGraphId, newId); assert.equal(repo.workspace.graphViews[newId].selectedNodeId, 'rag');
+  assert.deepEqual(repo.workspace.graphOrder, [template.id, newId]); assert.ok(!repo.workspace.graphViews[template.id]);
+});
+test('single graph receipt survives subsequent edits and restart after receipt write failure', async t => {
+  let fail = false; const { repo, options } = await fixture(t, point => { if (fail && point === 'beforeReceipt') throw Error('crash'); });
+  const graph = await repo.create(repo.generationId, id(), id(), empty()); const pack = await repo.exportGraph(graph.id, 1, repo.generationId);
+  const preview = await repo.preview(repo.generationId, pack), mutationId = id(); fail = true;
+  await assert.rejects(repo.commit(repo.generationId, preview.importId, mutationId), { code: 'RECOVERY_REQUIRED' }); await repo.close(); fail = false;
+  const reopened = await new Repository(options).open(); t.after(() => reopened.close()); const receipt = await reopened.receipt(preview.importId);
+  assert.ok(receipt); const imported = await reopened.get(receipt.graphIds[0]); await reopened.save(reopened.generationId, imported.id, 1, id(), empty('edited after import'));
+  assert.deepEqual(await reopened.commit(reopened.generationId, preview.importId, mutationId), receipt); assert.equal((await reopened.state()).graphs.length, 2);
+});

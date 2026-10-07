@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-server/
+data/
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+*.log
+.browser/
